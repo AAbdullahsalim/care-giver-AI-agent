@@ -12,7 +12,7 @@ if __name__ == "__main__":
     print("🔗 Frontend should connect to: http://localhost:8000")
     
     uvicorn.run(
-        app, 
+        "main:app",  # Use import string for reload to work
         host="0.0.0.0", 
         port=8000,
         reload=True,  # Auto-reload on code changes during development

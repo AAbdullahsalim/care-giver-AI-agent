@@ -10,7 +10,7 @@ app = FastAPI(title="Caregiver AI Agent Backend", version="1.0.0")
 # Enable CORS for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:5500", "file://"],  # Frontend URLs
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
