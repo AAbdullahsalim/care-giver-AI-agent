@@ -58,24 +58,64 @@ async function handleFormSubmission(e) {
         return;
     }
     
-    // Simulate processing delay (in real app, this would be API call)
-    await simulateProcessing(1500);
-    
-    // Hide form and show success
-    userForm.style.display = 'none';
-    formSuccess.style.display = 'block';
-    
-    // Update success display
-    document.getElementById('welcomeName').textContent = userInfo.name;
-    document.getElementById('displayContact').textContent = userInfo.contact;
-    document.getElementById('displayReason').textContent = 
-        userInfo.reason.length > 50 ? userInfo.reason.substring(0, 50) + '...' : userInfo.reason;
-    
-    // Enable chat
-    enableChat();
-    
-    // Send initial scenario analysis message
-    await analyzeScenario(userInfo.reason);
+    // Send user info to backend and get initial response
+    try {
+        const response = await fetch('http://localhost:8000/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_name: userInfo.name,
+                contact_number: userInfo.contact,
+                reason_for_contact: userInfo.reason,
+                message: "Initial contact - user just registered"
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Backend connection failed');
+        }
+        
+        const data = await response.json();
+        
+        // Hide form and show success
+        userForm.style.display = 'none';
+        formSuccess.style.display = 'block';
+        
+        // Update success display
+        document.getElementById('welcomeName').textContent = userInfo.name;
+        document.getElementById('displayContact').textContent = userInfo.contact;
+        document.getElementById('displayReason').textContent = 
+            userInfo.reason.length > 50 ? userInfo.reason.substring(0, 50) + '...' : userInfo.reason;
+        
+        // Enable chat
+        enableChat();
+        
+        // Send initial AI response
+        addMessage('bot', data.response, 'now');
+        
+        // Add suggestions if available
+        if (data.suggestions && data.suggestions.length > 0) {
+            addSuggestionButtons(data.suggestions);
+        }
+        
+    } catch (error) {
+        console.error('Backend connection error:', error);
+        // Fallback to original behavior if backend is not available
+        userForm.style.display = 'none';
+        formSuccess.style.display = 'block';
+        
+        document.getElementById('welcomeName').textContent = userInfo.name;
+        document.getElementById('displayContact').textContent = userInfo.contact;
+        document.getElementById('displayReason').textContent = 
+            userInfo.reason.length > 50 ? userInfo.reason.substring(0, 50) + '...' : userInfo.reason;
+        
+        enableChat();
+        
+        // Fallback message
+        addMessage('bot', `Welcome ${userInfo.name}! I'm here to help with your inquiry about: ${userInfo.reason}. How can I assist you?`, 'now');
+    }
     
     hideLoading();
     
@@ -125,26 +165,11 @@ function enableChat() {
     );
 }
 
-// Analyze scenario based on user's reason for contact
+// Legacy function - now handled by backend
+// Keeping for fallback compatibility
 async function analyzeScenario(reason) {
-    showLoading('Analyzing your request...');
-    
-    // Simulate AI analysis (in real app, this would call your LangGraph backend)
-    await simulateProcessing(2000);
-    
-    // Mock scenario analysis
-    const scenario = determineScenario(reason);
-    
-    hideLoading();
-    
-    // Send scenario-specific response
-    addMessage(
-        'bot',
-        `Based on your message: "${reason.substring(0, 100)}${reason.length > 100 ? '...' : ''}", I've identified this as a **${scenario.category}** inquiry. ${scenario.response}`,
-        'now'
-    );
-    
-    console.log('🎯 Scenario Analysis:', scenario);
+    // This is now handled by the backend /chat endpoint
+    console.log('🎯 Scenario analysis moved to backend');
 }
 
 // Determine scenario based on keywords (mock implementation)
@@ -217,24 +242,65 @@ async function sendMessage() {
     // Show typing indicator
     showTypingIndicator();
     
-    // Simulate bot response (in real app, this would call your API)
-    await simulateProcessing(1500);
+    try {
+        // Call backend API for response
+        const response = await fetch('http://localhost:8000/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_name: userInfo.name,
+                contact_number: userInfo.contact,
+                reason_for_contact: userInfo.reason,
+                message: message
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Backend connection failed');
+        }
+        
+        const data = await response.json();
+        
+        // Remove typing indicator
+        removeTypingIndicator();
+        
+        // Add bot response
+        addMessage('bot', data.response, 'now');
+        
+        // Add suggestions if available
+        if (data.suggestions && data.suggestions.length > 0) {
+            addSuggestionButtons(data.suggestions);
+        }
+        
+        // Store message in history with scenario info
+        messageHistory.push({
+            user: message,
+            bot: data.response,
+            scenario: data.scenario_detected || null,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Backend API error:', error);
+        
+        // Remove typing indicator
+        removeTypingIndicator();
+        
+        // Fallback to mock response if backend is unavailable
+        const botResponse = generateBotResponse(message);
+        addMessage('bot', botResponse, 'now');
+        
+        // Store message in history
+        messageHistory.push({
+            user: message,
+            bot: botResponse,
+            timestamp: new Date().toISOString()
+        });
+         }
     
-    // Remove typing indicator
-    removeTypingIndicator();
-    
-    // Generate bot response
-    const botResponse = generateBotResponse(message);
-    addMessage('bot', botResponse, 'now');
-    
-    // Store message in history
-    messageHistory.push({
-        user: message,
-        bot: botResponse,
-        timestamp: new Date().toISOString()
-    });
-    
-    console.log('💬 Message Exchange:', { user: message, bot: botResponse });
+    console.log('💬 Message Exchange:', { user: message, bot: messageHistory[messageHistory.length - 1] });
 }
 
 // Generate bot response (mock implementation)
@@ -373,6 +439,65 @@ function removeTypingIndicator() {
     const typingIndicator = document.getElementById('typing-indicator');
     if (typingIndicator) {
         typingIndicator.remove();
+    }
+}
+
+// Add suggestion buttons
+function addSuggestionButtons(suggestions) {
+    // Remove any existing suggestions
+    const existingSuggestions = document.getElementById('suggestion-buttons');
+    if (existingSuggestions) {
+        existingSuggestions.remove();
+    }
+    
+    const suggestionDiv = document.createElement('div');
+    suggestionDiv.id = 'suggestion-buttons';
+    suggestionDiv.className = 'suggestion-buttons';
+    
+    suggestions.forEach(suggestion => {
+        const button = document.createElement('button');
+        button.className = 'suggestion-btn';
+        button.textContent = suggestion;
+        button.onclick = () => {
+            messageInput.value = suggestion;
+            sendMessage();
+            suggestionDiv.remove();
+        };
+        suggestionDiv.appendChild(button);
+    });
+    
+    chatMessages.appendChild(suggestionDiv);
+    scrollToBottom();
+    
+    // Add suggestion button styles if not already added
+    if (!document.getElementById('suggestion-styles')) {
+        const style = document.createElement('style');
+        style.id = 'suggestion-styles';
+        style.textContent = `
+            .suggestion-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 10px 20px;
+                margin: 10px 0;
+            }
+            .suggestion-btn {
+                background: #f3f4f6;
+                border: 1px solid #d1d5db;
+                border-radius: 20px;
+                padding: 8px 16px;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: #374151;
+            }
+            .suggestion-btn:hover {
+                background: #4f46e5;
+                color: white;
+                border-color: #4f46e5;
+            }
+        `;
+        document.head.appendChild(style);
     }
 }
 

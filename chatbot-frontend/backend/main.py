@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import datetime
 from enum import Enum
+from simple_ai import simple_ai
 
 app = FastAPI(title="Caregiver AI Agent Backend", version="1.0.0")
 
@@ -80,23 +81,50 @@ async def root():
 
 @app.post("/chat", response_model=ChatResponse)
 async def handle_chat(request: ChatRequest):
-    """Handle general chat messages from the frontend"""
+    """Handle general chat messages from the frontend using Gemini AI"""
     
-    # Analyze the message for caregiver-related scenarios
-    scenario = analyze_message_for_scenario(request.message, request.reason_for_contact)
-    
-    if scenario:
-        return ChatResponse(
-            response=f"I understand you're dealing with a {scenario['type']} situation. {scenario['response']}",
-            scenario_detected=scenario['type'],
-            suggestions=scenario['suggestions']
+    try:
+        print(f"📥 Received chat request from {request.user_name}")
+        
+        # Use AI workflows to process the message
+        result = await simple_ai.process_message(
+            user_info={
+                'user_name': request.user_name,
+                'contact_number': request.contact_number,
+                'reason_for_contact': request.reason_for_contact
+            },
+            message=request.message
         )
-    
-    # Default response
-    return ChatResponse(
-        response=f"Hello {request.user_name}! I understand you're contacting us about: {request.reason_for_contact}. How can I help you with this specific issue?",
-        suggestions=["Tell me more details", "What should I do next?", "Is this urgent?"]
-    )
+        
+        print(f"📤 Sending AI response: {result['response'][:100]}...")
+        
+        return ChatResponse(
+            response=result['response'],
+            scenario_detected=result['scenario_detected'],
+            suggestions=result['suggestions']
+        )
+        
+    except Exception as e:
+        # Fallback to simple response if AI fails
+        print(f"❌ AI Error: {e}")
+        print("🔄 Using fallback response")
+        
+        # Determine scenario without AI
+        scenario = "General Inquiry"
+        if "schedule" in request.message.lower() or "schedule" in request.reason_for_contact.lower():
+            scenario = "Schedule Issue"
+        elif "location" in request.message.lower() or "gps" in request.message.lower():
+            scenario = "Location Issue"
+        elif "phone" in request.message.lower():
+            scenario = "Phone Issue"
+        elif "late" in request.message.lower() or "time" in request.message.lower():
+            scenario = "Timing Issue"
+        
+        return ChatResponse(
+            response=f"Hello {request.user_name}! This is Rosella from Independence Care. I understand you're contacting us about: {request.reason_for_contact}. How can I help you with this specific issue?",
+            scenario_detected=scenario,
+            suggestions=["Tell me more details", "What should I do next?", "Is this urgent?"]
+        )
 
 @app.post("/clock-in", response_model=ScenarioResponse)
 async def handle_clock_in(request: ClockInRequest):
