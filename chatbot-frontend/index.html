@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Chat Section (Left Side) -->
+        <div class="chat-section">
+            <div class="chat-header">
+                <div class="bot-info">
+                    <div class="bot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="bot-details">
+                        <h3>AI Assistant</h3>
+                        <span class="status">Online</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="action-btn" id="clearChat">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! I'm your AI assistant. Please fill out the form on the right to get started, then click "Start Conversation" to begin our chat.</p>
+                        <span class="message-time">Just now</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container" id="chatInputContainer" style="display: none;">
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type your message..." disabled>
+                    <button id="sendMessage" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Section (Right Side) -->
+        <div class="form-section">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>Get Started</h2>
+                    <p>Tell us about yourself to begin your personalized experience</p>
+                </div>
+                
+                <form class="user-form" id="userForm">
+                    <div class="form-group">
+                        <label for="userName">
+                            <i class="fas fa-user"></i>
+                            Full Name
+                        </label>
+                        <input type="text" id="userName" name="userName" required placeholder="Enter your full name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contactNumber">
+                            <i class="fas fa-phone"></i>
+                            Contact Number
+                        </label>
+                        <input type="tel" id="contactNumber" name="contactNumber" required placeholder="Enter your phone number">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reasonForContact">
+                            <i class="fas fa-comment-dots"></i>
+                            Reason for Contact
+                        </label>
+                        <textarea id="reasonForContact" name="reasonForContact" required placeholder="Please describe what you need help with..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="start-conversation-btn" id="startConversation">
+                        <i class="fas fa-comments"></i>
+                        Start Conversation
+                    </button>
+                </form>
+                
+                <div class="form-success" id="formSuccess" style="display: none;">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3>Welcome, <span id="welcomeName"></span>!</h3>
+                    <p>Your information has been saved. You can now chat with our AI assistant.</p>
+                    <div class="user-info-summary">
+                        <div class="info-item">
+                            <strong>Contact:</strong> <span id="displayContact"></span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Topic:</strong> <span id="displayReason"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Processing your request...</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html> 
